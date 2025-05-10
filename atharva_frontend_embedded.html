@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Atharva - Your AI Search Companion</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            background: #3f51b5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+        }
+        #searchBox {
+            margin-top: 40px;
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 500px;
+            padding: 12px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            border: 2px solid #ccc;
+        }
+        button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            border: none;
+            background: #3f51b5;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2c3d99;
+        }
+        #results {
+            margin-top: 30px;
+            width: 70%;
+        }
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .result-card:hover {
+            transform: scale(1.01);
+        }
+        #uploadSection {
+            margin-top: 60px;
+            text-align: center;
+        }
+        input[type="file"] {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Atharva
+    </header>
+    <main>
+        <div id="searchBox">
+            <input type="text" id="query" placeholder="Ask Atharva anything...">
+            <button onclick="submitQuery()">Search</button>
+        </div>
+
+        <div id="results"></div>
+
+        <div id="uploadSection">
+            <h3>Upload a document (PDF/TXT/CSV) to use in your search (optional)</h3>
+            <input type="file" id="docUpload" />
+            <button onclick="uploadDoc()">Upload</button>
+            <p id="uploadStatus" style="color: green;"></p>
+        </div>
+    </main>
+
+    <script>
+        let docUploaded = false;
+
+        async function submitQuery() {
+            const query = document.getElementById("query").value;
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+
+            const endpoint = docUploaded ? '/rag-query' : '/search';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            });
+            const data = await response.json();
+            resultsDiv.innerHTML = '';
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `<strong>Answer:</strong><br>${data.answer}`;
+            resultsDiv.appendChild(card);
+        }
+
+        async function uploadDoc() {
+            const input = document.getElementById('docUpload');
+            const formData = new FormData();
+            formData.append('file', input.files[0]);
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.message.includes("successfully")) {
+                docUploaded = true;
+                document.getElementById("uploadStatus").textContent = "Document uploaded and ready!";
+            } else {
+                docUploaded = false;
+                document.getElementById("uploadStatus").textContent = "Upload failed.";
+            }
+        }
+    </script>
+</body>
+</html>
